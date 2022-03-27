@@ -86,9 +86,4 @@ export default {
       }
     });
   },
-  playToken: url => {
-    return axios.get("/playToken", {
-      params: { url }
-    });
-  }
 };

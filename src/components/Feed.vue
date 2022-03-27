@@ -29,11 +29,9 @@
 </template>
 
 <script>
-  import videojs from "video.js";
   import { mapGetters } from "vuex";
 
-  import "videojs-contrib-quality-levels";
-  import "videojs-http-source-selector";
+  import shaka from "shaka-player";
 
   import F1TV_API from "@/lib/F1TV_API";
 
@@ -96,20 +94,9 @@
         this.$emit("click", event.target);
       },
       async initPlayer() {
-        this.player = videojs(this.$refs.videoPlayer, this.options);
-        this.player.httpSourceSelector();
-
-        this.player.on("loadeddata", () => {
-          const tracks = this.player.remoteTextTracks();
-          for (let i = 0; i < tracks.length; i++) {
-            if (tracks[i].kind === "subtitles") {
-              tracks[i].mode = "hidden";
-            }
-          }
-        });
+        this.player = new shaka.Player(this.$refs.videoPlayer);
 
         this.initialized = true;
-
         this.updateSource();
       },
       async updateSource() {
@@ -122,29 +109,12 @@
             if (process.env.VUE_APP_NETLIFY) {
               url = "https://cors.bridged.cc/" + url;
             } else if (!process.env.IS_ELECTRON) {
-              const res = await F1TV_API.playToken(url);
-              this.player.on("loadstart", () => {
-                this.player.tech({ IWillNotUseThisInPlugins: true }).vhs.xhr.beforeRequest = options => {
-                  options.headers = {
-                    playToken: res.data.playToken,
-                    ...options.headers
-                  };
-                  return options;
-                };
-              });
               url = "/proxy/" + url;
             }
-            if (res.data.resultObj.streamType === "DASH") {
-              this.player.src({
-                src: url,
-                type: 'application/dash+xml',
-                keySystems: {
-                  "com.widevine.alpha": res.data.resultObj.laURL
-                }
-              });
-            } else {
-              this.player.src(url);
-            }
+            this.player.load(url).then(function() {
+              // This runs if the asynchronous load is successful.
+              console.log('The video has now been loaded!');
+            });
           }
         } catch (err) {
           console.error(err);

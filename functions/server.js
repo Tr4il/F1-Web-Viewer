@@ -70,36 +70,7 @@ if (!process.env.AWS_EXECUTION_ENV) {
 
   app.all("/proxy/:url*", (req, res) => {
     req.url = req.url.replace("/proxy/", "/");
-
-    if (req.headers.playtoken) {
-      req.headers.cookie = `playToken=${req.headers.playtoken}`;
-    }
-
     cors_proxy.emit("request", req, res);
-  });
-
-  app.get("/playToken", async (req, res) => {
-    const url = req.query.url;
-
-    if (!url) {
-      res.status(400).send("Unable to get playToken without a URL");
-    }
-
-    try {
-      const data = await fetch(url, {
-        method: "HEAD"
-      });
-
-      const playToken = data.headers.get("set-cookie").split(";")[0].split("=")[1];
-
-      res.status(data.status).json({
-        playToken
-      });
-    } catch (err) {
-      console.error(err);
-
-      res.status(500).json(err);
-    }
   });
 
   app.listen(PORT, () => console.info(`Server running on port ${PORT}`));
